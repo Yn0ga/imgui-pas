@@ -67,7 +67,7 @@ type
   ImGuiColorEditFlags = longint;
   ImGuiKey = longint;
   {$IFNDEF FPC}
-  size_t = longint;
+  size_t = LongWord;
   PPByte = ^PByte;
   {$ENDIF}
 

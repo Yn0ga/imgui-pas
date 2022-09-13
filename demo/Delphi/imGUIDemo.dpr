@@ -6,10 +6,10 @@ uses
   display in '..\display.pas',
   glad_gl in '..\glad_gl.pas',
   imgui_extra in '..\imgui_extra.pas',
-  sdl2 in '..\sdl2.pas',
   testwindow in '..\testwindow.pas',
   fpimgui in '..\..\fpimgui.pas',
-  fpimgui_impl_sdlgl2 in '..\..\examples\fpimgui_impl_sdlgl2.pas';
+  fpimgui_impl_sdlgl2 in '..\..\examples\fpimgui_impl_sdlgl2.pas',
+  sdl2 in '..\sdl2\units\sdl2.pas';
 
 {$R *.res}
 

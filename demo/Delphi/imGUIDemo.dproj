@@ -109,10 +109,10 @@
         <DCCReference Include="..\display.pas"/>
         <DCCReference Include="..\glad_gl.pas"/>
         <DCCReference Include="..\imgui_extra.pas"/>
-        <DCCReference Include="..\sdl2.pas"/>
         <DCCReference Include="..\testwindow.pas"/>
         <DCCReference Include="..\..\fpimgui.pas"/>
         <DCCReference Include="..\..\examples\fpimgui_impl_sdlgl2.pas"/>
+        <DCCReference Include="..\sdl2\units\sdl2.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
