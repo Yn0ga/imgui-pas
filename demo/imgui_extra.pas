@@ -3,7 +3,9 @@ Additional imgui related code that may come in handy, mostly code samples from v
 }
 unit imgui_extra;
 
+{$IFDEF FPC}
 {$mode objfpc}{$H+}
+{$ENDIF}
 
 interface
 

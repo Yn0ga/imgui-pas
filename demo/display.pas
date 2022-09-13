@@ -2,7 +2,9 @@
 display.pas
 *)
 unit display;
+{$IFDEF FPC}
 {$mode objfpc}{$H+}
+{$ENDIF}
 
 interface
 
@@ -37,7 +39,7 @@ type
 *******************************************************************************) 
 implementation
 
-function GLFuncLoad(proc: Pchar): Pointer;
+function GLFuncLoad(proc: {$IFDEF FPC}Pchar{$ELSE}PAnsiChar{$ENDIF}): Pointer;
 begin
   result := SDL_GL_GetProcAddress(proc);
   Assert(result <> nil, 'couldn''t load ' + proc);
@@ -111,7 +113,7 @@ end;
 
 procedure TDisplay.SetWindowCaption(caption: string);
 begin
-  SDL_SetWindowTitle(window, pchar(caption));
+  SDL_SetWindowTitle(window, {$IFDEF FPC}pchar(caption){$ELSE}PAnsiChar(caption){$ENDIF});
 end;
 
 procedure TDisplay.NewFrame;

@@ -10,7 +10,11 @@ https://github.com/ocornut/imgui
 }
 
 unit fpimgui_impl_sdlgl2;
+{$IFDEF FPC}
 {$mode objfpc}{$H+}
+{$ELSE}
+{$POINTERMATH ON}
+{$ENDIF}
 
 interface
 
@@ -112,7 +116,11 @@ end;
 
 function ImGui_MemAlloc(sz:size_t): pointer; cdecl;
 begin
+  {$IFDEF FPC}
   result := Getmem(sz);
+  {$ELSE}
+  Result := SysGetMem(sz);
+  {$ENDIF}
 end;
 
 procedure ImGui_MemFree(ptr:pointer); cdecl;
@@ -283,7 +291,7 @@ begin
 
       for cmd_i := 0 to cmd_list^.CmdBuffer.Size - 1 do begin
           pcmd := @(cmd_list^.CmdBuffer.Data[cmd_i]);
-          if pcmd^.UserCallback <> nil then begin
+          if {$IFDEF FPC}pcmd^.UserCallback <> nil{$ELSE}Assigned(pcmd^.UserCallback){$ENDIF} then begin
               pcmd^.UserCallback(cmd_list, pcmd);
           end else begin
               glBindTexture(GL_TEXTURE_2D, GLuint(pcmd^.TextureId));
@@ -291,7 +299,11 @@ begin
                         trunc(pcmd^.ClipRect.z - pcmd^.ClipRect.x), trunc(pcmd^.ClipRect.w - pcmd^.ClipRect.y));
               glDrawElements(GL_TRIANGLES, pcmd^.ElemCount, GL_UNSIGNED_SHORT, idx_buffer);
           end;
+          {$IFDEF FPC}
           idx_buffer += pcmd^.ElemCount
+          {$ELSE}
+          idx_buffer := idx_buffer + pcmd^.ElemCount;
+          {$ENDIF}
       end;
   end;
 

@@ -5,7 +5,9 @@
     * a quick guide if something isn't translated in a straightforward way
 }
 unit TestWindow;
+{$IFDEF FPC}
 {$mode objfpc}{$H+}
+{$ENDIF}
 
 interface
 
@@ -48,6 +50,11 @@ type
 
 implementation
 
+{$IFNDEF FPC}
+const LineEnding = #1310;
+{$ENDIF}
+
+
 procedure ShowHelpMarker(const desc: string);
 begin
     ImGui.TextDisabled('(?)');
@@ -66,13 +73,21 @@ end;
 procedure TTestWindow.Trees;
 const  //static vars
   align_label_with_current_x_position: boolean = false;
+{$IFDEF FPC}
   selection_mask: integer = 1 << 2;  // Dumb representation of what may be user-side selection state. You may carry selection state inside or outside your objects in whatever format you see fit.
+{$ENDIF}
 var
   node_open: bool;
   node_clicked: Integer;
   i: Integer;
   node_flags: ImGuiTreeNodeFlags;
+  {$IFNDEF FPC}
+  selection_mask: integer;
+  {$ENDIF}
 begin
+  {$IFNDEF FPC}
+  selection_mask := 1 shl 2;
+  {$ENDIF}
   if (ImGui.TreeNode('Basic trees')) then
   begin
       for i := 0 to 4 do
@@ -101,7 +116,7 @@ begin
           // Disable the default open on single-click behavior and pass in Selected flag according to our selection state.
           //ImGuiTreeNodeFlags node_flags := ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ((selection_mask & (1 << i)) ? ImGuiTreeNodeFlags_Selected : 0);
           node_flags := ord(ImGuiTreeNodeFlags_OpenOnArrow) or ord(ImGuiTreeNodeFlags_OpenOnDoubleClick);
-          if (selection_mask and (1 << i)) > 0 then
+          if (selection_mask and (1 {$IFNDEF FPC}shl{$ELSE}<<{$ENDIF} i)) > 0 then
               node_flags := node_flags or ord (ImGuiTreeNodeFlags_Selected);
           if (i < 3) then
           begin
@@ -128,9 +143,9 @@ begin
       begin
           // Update selection state. Process outside of tree loop to avoid visual inconsistencies during the clicking-frame.
           if (ImGui.GetIO()^.KeyCtrl) then
-              selection_mask := selection_mask xor (1 << node_clicked)          // CTRL+click to toggle
+              selection_mask := selection_mask xor (1 {$IFNDEF FPC}shl{$ELSE}<<{$ENDIF} node_clicked)          // CTRL+click to toggle
           else //if (!(selection_mask & (1 << node_clicked))) // Depending on selection behavior you want, this commented bit preserve selection when clicking on item that is part of the selection
-              selection_mask := (1 << node_clicked);           // Click to single-select
+              selection_mask := (1 {$IFNDEF FPC}shl{$ELSE}<<{$ENDIF} node_clicked);           // Click to single-select
       end;
       ImGui.PopStyleVar();
       if (align_label_with_current_x_position) then
@@ -168,10 +183,11 @@ end;
 
 procedure TTestWindow.Show(var p_open: boolean);
 var
-  window_flags: ImGuiWindowFlags = 0;
+  window_flags: ImGuiWindowFlags{$IFDEF FPC} = 0{$ENDIF};
   draw_list: PImDrawList;
   value_raw, value_with_lock_threshold, mouse_delta: ImVec2;
 begin
+  {$IFNDEF FPC}window_flags := 0;{$ENDIF}
   // Demonstrate the various window flags. Typically you would just use the default.
   if (no_titlebar)   then window_flags := window_flags or ord(ImGuiWindowFlags_NoTitleBar);
   if (no_resize)     then window_flags := window_flags or ord(ImGuiWindowFlags_NoResize);

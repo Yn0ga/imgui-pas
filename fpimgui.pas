@@ -4,18 +4,28 @@ Based on ImGui 1.53 + cimgui wrapper
 Not all functions were tested.
 }
 unit fpimgui;
+{$IFDEF FPC}
 {$mode objfpc}{$H+}
 {$modeswitch advancedrecords}
+{$ENDIF}
 
 interface
 
 uses
+{$IFDEF FPC}
 {$PACKRECORDS C}
 dynlibs,   //for SharedSuffix
 sysutils;  //for Format()
+{$ENDIF}
+System.Types,
+System.SysUtils;
 
 const
+  {$IFDEF FPC}
   ImguiLibName = 'cimgui.' + SharedSuffix;
+  {$ELSE}
+  ImguiLibName = 'cimgui.dll';
+  {$ENDIF}
 
 type
   bool = boolean;
@@ -56,6 +66,10 @@ type
   ImGuiStyleVar = longint;
   ImGuiColorEditFlags = longint;
   ImGuiKey = longint;
+  {$IFNDEF FPC}
+  size_t = longint;
+  PPByte = ^PByte;
+  {$ENDIF}
 
   { Enums }
 
@@ -460,11 +474,10 @@ type
   end;
   PImDrawVert = ^ImDrawVert;
 
-  PImDrawList = ^ImDrawList;
-  PPImDrawList = ^PImDrawList;
+
   PImDrawIdx = ^ImDrawIdx;
   ImDrawIdx = word;
-
+  PImDrawList = ^ImDrawList;
   PImDrawCmd = ^ImDrawCmd;
   ImDrawCallback = procedure(parent_list: PImDrawList; cmd: PImDrawCmd); cdecl;
   ImDrawCmd = record
@@ -474,16 +487,20 @@ type
       UserCallback: ImDrawCallback;
       UserCallbackData: Pointer;
   end;
+  PPImDrawList = ^PImDrawList;
+
+
+
 
   //imgui uses generic T* pointer as Data, so we need to specialize with pointer types
-  generic ImVector<_T> = record
+  {$IFDEF FPC}generic {$ENDIF}ImVector<_T> = record
       Size: integer;
       Capacity: integer;
       Data: _T;
   end;
-  ImVectorDrawCmd = specialize ImVector<PImDrawCmd>;
-  ImVectorDrawIdx = specialize ImVector<PImDrawIdx>;
-  ImVectorDrawVert = specialize ImVector<PImDrawVert>;
+  ImVectorDrawCmd = {$IFDEF FPC}specialize  {$ENDIF}ImVector<PImDrawCmd>;
+  ImVectorDrawIdx = {$IFDEF FPC}specialize  {$ENDIF}ImVector<PImDrawIdx>;
+  ImVectorDrawVert = {$IFDEF FPC}specialize  {$ENDIF}ImVector<PImDrawVert>;
 
   //definitions for private members aren't translated, so always pass around pointers to this struct and don't copy it
   ImDrawList = record
@@ -491,10 +508,11 @@ type
       IdxBuffer: ImVectorDrawIdx;
       VtxBuffer: ImVectorDrawVert;
   end;
+  _PImDrawList = array of PImDrawList;
 
   ImDrawData = record
       Valid: boolean;
-      CmdLists: PPImDrawList;
+      CmdLists: _PImDrawList;
       CmdListsCount,
       TotalVtxCount,
       TotalIdxCount: integer;
@@ -581,9 +599,9 @@ public
   class function  IsWindowCollapsed: bool;  inline;
   class procedure SetWindowFontScale(scale: single);  inline;
 
-  class procedure SetNextWindowPos(pos: ImVec2; cond: ImGuiCond; const pivot: ImVec2); inline;
-  class procedure SetNextWindowPos(pos: ImVec2; cond: ImGuiCond = 0);  inline;
-  class procedure SetNextWindowPosCenter(cond: ImGuiCond = 0);  inline;
+  class procedure SetNextWindowPos(pos: ImVec2; cond: ImGuiCond; const pivot: ImVec2);  overload; inline;
+  class procedure SetNextWindowPos(pos: ImVec2; cond: ImGuiCond = 0);   overload; inline;
+  //NOTFOUND class procedure SetNextWindowPosCenter(cond: ImGuiCond = 0);  inline;
   class procedure SetNextWindowSize(size: ImVec2; cond: ImGuiCond = 0);  inline;
   class procedure SetNextWindowSizeConstraints(size_min: ImVec2; size_max: ImVec2; custom_callback: ImGuiSizeConstraintCallback; custom_callback_data: pointer);  inline;
   class procedure SetNextWindowContentSize(size: ImVec2);  inline;
@@ -682,31 +700,31 @@ public
   class function  GetIdPtr(ptr_id: pointer): ImGuiID;  inline;
 
   { Widgets: Text }
-  class procedure Text(const text_: string);
-  class procedure Text(const Fmt: string; const Args: array of Const);
+  class procedure Text(const text_: string); overload;
+  class procedure Text(const Fmt: string; const Args: array of Const); overload;
   //procedure igTextV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
-  class procedure TextColored(col: ImVec4; fmt: PChar; args: array of const); { inline; }
-  class procedure TextColored(col: ImVec4; const fmt: string); inline;
+  class procedure TextColored(col: ImVec4; fmt: PChar; args: array of const);overload; { inline; }
+  class procedure TextColored(col: ImVec4; const fmt: string);overload; inline;
   //procedure igTextColoredV(col:ImVec4; fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
-  class procedure TextDisabled(const fmt: string; args: array of const); {inline;}
-  class procedure TextDisabled(const fmt: string); inline;
+  class procedure TextDisabled(const fmt: string; args: array of const);overload; {inline;}
+  class procedure TextDisabled(const fmt: string);overload; inline;
   //procedure igTextDisabledV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
-  class procedure TextWrapped(const fmt: string; args: array of const); {inline;}
-  class procedure TextWrapped(const fmt: string); inline;
+  class procedure TextWrapped(const fmt: string; args: array of const);overload; {inline;}
+  class procedure TextWrapped(const fmt: string);overload; inline;
   //procedure igTextWrappedV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
-  class procedure TextUnformatted(const _text: string);
-  class procedure TextUnformatted(const _text: PChar; const text_end: PChar = nil);
-  class procedure LabelText(_label: string; fmt: string);
-  class procedure LabelText(_label: string; fmt: PChar; args: array of const);
+  class procedure TextUnformatted(const _text: string);overload;
+  class procedure TextUnformatted(const _text: PChar; const text_end: PChar = nil);overload;
+  class procedure LabelText(_label: string; fmt: string);overload;
+  class procedure LabelText(_label: string; fmt: PChar; args: array of const);overload;
   //procedure igLabelTextV(_label:Pchar; fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
   class procedure Bullet;  inline;
-  class procedure BulletText(const fmt: string; args: array of const); {inline;}
-  class procedure BulletText(const fmt: string);  inline;
+  class procedure BulletText(const fmt: string; args: array of const); overload;{inline;}
+  class procedure BulletText(const fmt: string);overload;  inline;
   //procedure igBulletTextV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
 
   { Widgets: Main }
-  class function  Button(_label: string; size: ImVec2): bool;
-  class function  Button(_label: string): bool; //overload for default size (0,0)
+  class function  Button(_label: string; size: ImVec2): bool;overload;
+  class function  Button(_label: string): bool;overload; //overload for default size (0,0)
   class function  SmallButton(_label: PChar): bool;  inline;
   class function  InvisibleButton(str_id: PChar; size: ImVec2): bool;  inline;
   class procedure Image(user_texture_id: ImTextureID; size: ImVec2; uv0: ImVec2; uv1: ImVec2; tint_col: ImVec4; border_col: ImVec4);  inline;
@@ -742,35 +760,35 @@ public
   class procedure ProgressBar(fraction: single; size_arg: PImVec2; overlay: PChar);  inline;
 
   { Widgets: Sliders (tip: ctrl+click on a slider to input text) }
-  class function  SliderFloat (_label: PChar; v: Psingle; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  SliderFloat2(_label: PChar; v: TFloat2; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  SliderFloat3(_label: PChar; v: TFloat3; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  SliderFloat4(_label: PChar; v: TFloat4; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
+  class function  SliderFloat (_label: PChar; v: Psingle; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;   inline;
+  class function  SliderFloat2(_label: PChar; v: TFloat2; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;   inline;
+  class function  SliderFloat3(_label: PChar; v: TFloat3; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;   inline;
+  class function  SliderFloat4(_label: PChar; v: TFloat4; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;   inline;
   class function  SliderAngle(_label: PChar; v_rad: Psingle; v_degrees_min: single = -360; v_degrees_max: single = 360): bool;  inline;
-  class function  SliderInt (_label: PChar; v: Plongint; v_min: longint; v_max: longint;  display_format: PChar = '%.0f'): bool;  inline;
-  class function  SliderInt2(_label: PChar; v: TLongInt2; v_min: longint; v_max: longint; display_format: PChar = '%.0f'): bool;  inline;
-  class function  SliderInt3(_label: PChar; v: TLongInt3; v_min: longint; v_max: longint; display_format: PChar = '%.0f'): bool;  inline;
-  class function  SliderInt4(_label: PChar; v: TLongInt4; v_min: longint; v_max: longint; display_format: PChar = '%.0f'): bool;  inline;
-  class function  VSliderFloat(_label: PChar; size: ImVec2; v: Psingle; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  VSliderInt(_label: PChar; size: ImVec2; v: Plongint; v_min: longint; v_max: longint; display_format: PChar = '%.0f'): bool;  inline;
+  class function  SliderInt (_label: PChar; v: Plongint; v_min: longint; v_max: longint;  display_format: PChar{$IFDEF FPC} = '%.0f'{$ENDIF}): bool;  inline;
+  class function  SliderInt2(_label: PChar; v: TLongInt2; v_min: longint; v_max: longint; display_format: PChar{$IFDEF FPC} = '%.0f'{$ENDIF}): bool;  inline;
+  class function  SliderInt3(_label: PChar; v: TLongInt3; v_min: longint; v_max: longint; display_format: PChar{$IFDEF FPC} = '%.0f'{$ENDIF}): bool;  inline;
+  class function  SliderInt4(_label: PChar; v: TLongInt4; v_min: longint; v_max: longint; display_format: PChar{$IFDEF FPC} = '%.0f'{$ENDIF}): bool;  inline;
+  class function  VSliderFloat(_label: PChar; size: ImVec2; v: Psingle; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;  inline;
+  class function  VSliderInt(_label: PChar; size: ImVec2; v: Plongint; v_min: longint; v_max: longint; display_format: PChar{$IFDEF FPC} = '%.0f'{$ENDIF}): bool;  inline;
 
   { Widgets: Drags (tip: ctrl+click on a drag box to input text) }
   // For all the Float2/Float3/Float4/Int2/Int3/Int4 versions of every functions, remember than a 'float v[3]' function argument is the same as 'float* v'. You can pass address of your first element out of a contiguous set, e.g. &myvector.x
   { If v_min >= v_max we have no bound }
-  class function  DragFloat (_label: PChar; v: Psingle; v_speed: single; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  DragFloat2(_label: PChar; v: TFloat2; v_speed: single; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  DragFloat3(_label: PChar; v: TFloat3; v_speed: single; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
-  class function  DragFloat4(_label: PChar; v: TFloat4; v_speed: single; v_min: single; v_max: single; display_format: PChar = '%.3f'; power: single = 1): bool;  inline;
+  class function  DragFloat (_label: PChar; v: Psingle; v_speed: single; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;  inline;
+  class function  DragFloat2(_label: PChar; v: TFloat2; v_speed: single; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;  inline;
+  class function  DragFloat3(_label: PChar; v: TFloat3; v_speed: single; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;  inline;
+  class function  DragFloat4(_label: PChar; v: TFloat4; v_speed: single; v_min: single; v_max: single; display_format: PChar{$IFDEF FPC} = '%.3f'{$ENDIF}; power: single = 1): bool;  inline;
   class function  DragFloatRange2(_label: PChar; v_current_min: Psingle; v_current_max: Psingle; v_speed: single = 1;
-                                  v_min: single = 0; v_max: single = 0; display_format: PChar = '%.3f'; display_format_max: PChar = nil; power: single = 1): bool;  inline;
+                                  v_min: single = 0; v_max: single = 0; display_format: PChar{$IFDEF FPC} = '%.3f'{$ELSE}=nil{$ENDIF}; display_format_max: PChar = nil; power: single = 1): bool;  inline;
 
   { If v_min >= v_max we have no bound }
-  class function  DragInt (_label: PChar; v: Plongint;  v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar = '%.0f'): bool;  inline;
-  class function  DragInt2(_label: PChar; v: TLongInt2; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar = '%.0f'): bool;  inline;
-  class function  DragInt3(_label: PChar; v: TLongInt3; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar = '%.0f'): bool;  inline;
-  class function  DragInt4(_label: PChar; v: TLongInt4; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar = '%.0f'): bool;  inline;
+  class function  DragInt (_label: PChar; v: Plongint;  v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar{$IFDEF FPC} = '%.0f'{$ELSE}=nil{$ENDIF}): bool;  inline;
+  class function  DragInt2(_label: PChar; v: TLongInt2; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar{$IFDEF FPC} = '%.0f'{$ELSE}=nil{$ENDIF}): bool;  inline;
+  class function  DragInt3(_label: PChar; v: TLongInt3; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar{$IFDEF FPC} = '%.0f'{$ELSE}=nil{$ENDIF}): bool;  inline;
+  class function  DragInt4(_label: PChar; v: TLongInt4; v_speed: single = 1; v_min: longint = 0; v_max: longint = 0; display_format: PChar{$IFDEF FPC} = '%.0f'{$ELSE}=nil{$ENDIF}): bool;  inline;
   class function  DragIntRange2(_label: PChar; v_current_min: Plongint; v_current_max: Plongint; v_speed: single = 1;
-                                v_min: longint = 0; v_max: longint = 0; display_format: PChar = '%.0f'; display_format_max: PChar = nil): bool;  inline;
+                                v_min: longint = 0; v_max: longint = 0; display_format: PChar{$IFDEF FPC} = '%.0f'{$ELSE}=nil{$ENDIF}; display_format_max: PChar = nil): bool;  inline;
 
   { Widgets: Input with Keyboard }
   class function  InputText(_label: PChar; buf: PChar; buf_size: size_t; flags: ImGuiInputTextFlags = 0; callback: ImGuiTextEditCallback = nil; user_data: pointer = nil): bool;  inline;
@@ -785,17 +803,17 @@ public
   class function  InputInt4(_label: PChar; v: TLongInt4; extra_flags: ImGuiInputTextFlags): bool;  inline;
 
   { Widgets: Trees }
-  class function  TreeNode(_label: string): bool;   inline;
-  class function  TreeNode(str_id: string; fmt: string; args: array of const): bool; {inline;}
-  class function  TreeNode(str_id: string; fmt: string): bool;  inline;
-  class function  TreeNode(ptr_id: pointer; fmt: string; args: array of const): bool; {inline;}
-  class function  TreeNode(ptr_id: pointer; fmt: string): bool;  inline;
+  class function  TreeNode(_label: string): bool;{$IFNDEF FPC}overload;{$ENDIF}   inline;
+  class function  TreeNode(str_id: string; fmt: string; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF}  {inline;}
+  class function  TreeNode(str_id: string; fmt: string): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  TreeNode(ptr_id: pointer; fmt: string; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} {inline;}
+  class function  TreeNode(ptr_id: pointer; fmt: string): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
 
-  class function  TreeNodeEx(_label: PChar; flags: ImGuiTreeNodeFlags): bool;  inline;
-  class function  TreeNodeEx(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: string; args: array of const): bool; {inline;}
-  class function  TreeNodeEx(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: string): bool;  inline;
-  class function  TreeNodeEx(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: string; args: array of const): bool; {inline;}
-  class function  TreeNodeEx(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: string): bool;  inline;
+  class function  TreeNodeEx(_label: PChar; flags: ImGuiTreeNodeFlags): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  TreeNodeEx(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: string; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} {inline;}
+  class function  TreeNodeEx(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: string): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  TreeNodeEx(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: string; args: array of const): bool; {$IFNDEF FPC}overload;{$ENDIF}{inline;}
+  class function  TreeNodeEx(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: string): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
   //todo : vargs
   //    function  igTreeNodeExV(str_id:Pchar; flags:ImGuiTreeNodeFlags; fmt:Pchar; args:va_list):bool;cdecl;external ImguiLibName;
   //todo : vargs
@@ -806,12 +824,12 @@ public
   class procedure TreeAdvanceToLabelPos;  inline;
   class function  GetTreeNodeToLabelSpacing: single;  inline;
   class procedure SetNextTreeNodeOpen(opened: bool; cond: ImGuiCond = 0);  inline;
-  class function  CollapsingHeader(_label: PChar; flags: ImGuiTreeNodeFlags = 0): bool;  inline;
-  class function  CollapsingHeader(_label: PChar; p_open: Pbool; flags: ImGuiTreeNodeFlags = 0): bool;  inline;
+  class function  CollapsingHeader(_label: PChar; flags: ImGuiTreeNodeFlags = 0): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  CollapsingHeader(_label: PChar; p_open: Pbool; flags: ImGuiTreeNodeFlags = 0): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
 
   { Widgets: Selectable / Lists }
-  class function  Selectable(_label: string; selected: bool; flags: ImGuiSelectableFlags; size: ImVec2): bool;
-  class function  Selectable(_label: string; selected: bool; flags: ImGuiSelectableFlags = 0): bool; //overload for default size (0,0)
+  class function  Selectable(_label: string; selected: bool; flags: ImGuiSelectableFlags; size: ImVec2): bool;{$IFNDEF FPC}overload;{$ENDIF}
+  class function  Selectable(_label: string; selected: bool; flags: ImGuiSelectableFlags = 0): bool;{$IFNDEF FPC}overload;{$ENDIF} //overload for default size (0,0)
   class function  SelectableEx(_label: PChar; p_selected: Pbool; flags: ImGuiSelectableFlags; size: ImVec2): bool;  inline;
   class function  ListBox(_label: PChar; current_item: Plongint; items: PPchar; items_count: longint; height_in_items: longint): bool;  inline;
   //todo : func type
@@ -828,8 +846,8 @@ public
   class procedure ValueFloat(prefix: PChar; v: single; float_format: PChar);  inline;
 
   { Tooltip }
-  class procedure SetTooltip(fmt: string; args: array of const); {inline}
-  class procedure SetTooltip(fmt: string); inline;
+  class procedure SetTooltip(fmt: string; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} {inline}
+  class procedure SetTooltip(fmt: string);{$IFNDEF FPC}overload;{$ENDIF} inline;
   //todo : vargs
   //    procedure igSetTooltipV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
   class procedure BeginTooltip;  inline;
@@ -842,8 +860,8 @@ public
   class procedure EndMenuBar;  inline;
   class function  BeginMenu(_label: PChar; Enabled: bool = true): bool;  inline;
   class procedure EndMenu;  inline;
-  class function  MenuItem(_label: PChar; shortcut: PChar; selected: bool; Enabled: bool = true): bool;  inline;
-  class function  MenuItem(_label: PChar; shortcut: PChar; p_selected: Pbool; Enabled: bool = true): bool;  inline;
+  class function  MenuItem(_label: PChar; shortcut: PChar; selected: bool; Enabled: bool = true): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  MenuItem(_label: PChar; shortcut: PChar; p_selected: Pbool; Enabled: bool = true): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
 
   { Popup }
   class procedure OpenPopup(str_id: PChar);  inline;
@@ -862,8 +880,8 @@ public
   class procedure LogToClipboard(max_depth: longint);  inline;
   class procedure LogFinish;  inline;
   class procedure LogButtons;  inline;
-  class procedure LogText(const fmt: string; args: array of const);
-  class procedure LogText(const fmt: string);
+  class procedure LogText(const fmt: string; args: array of const);{$IFNDEF FPC}overload;{$ENDIF}
+  class procedure LogText(const fmt: string);{$IFNDEF FPC}overload;{$ENDIF}
 
   { Drag and Drop }
 
@@ -895,8 +913,8 @@ public
   class function  IsWindowHovered(flags: ImGuiHoveredFlags = 0): bool; inline;
   class function  IsAnyWindowFocused: bool;  inline;
   class function  IsAnyWindowHovered: bool;  inline;
-  class function  IsRectVisible(const item_size: ImVec2): bool;  inline;
-  class function  IsRectVisible(const rect_min, rect_max: PImVec2): bool;  inline;
+  class function  IsRectVisible(const item_size: ImVec2): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
+  class function  IsRectVisible(const rect_min, rect_max: PImVec2): bool;{$IFNDEF FPC}overload;{$ENDIF}  inline;
 
   class function  GetTime: single;  inline;
   class function  GetFrameCount: longint;  inline;
@@ -1054,7 +1072,7 @@ function  igIsWindowCollapsed: bool; cdecl; external ImguiLibName;
 procedure igSetWindowFontScale(scale: single); cdecl; external ImguiLibName;
 
 procedure igSetNextWindowPos(pos: ImVec2; cond: ImGuiCond; const pivot: ImVec2); cdecl; external ImguiLibName;
-procedure igSetNextWindowPosCenter(cond: ImGuiCond); cdecl; external ImguiLibName;
+//NOTFOUNDprocedure igSetNextWindowPosCenter(cond: ImGuiCond); cdecl; external ImguiLibName;
 procedure igSetNextWindowSize(size: ImVec2; cond: ImGuiCond); cdecl; external ImguiLibName;
 procedure igSetNextWindowSizeConstraints(size_min: ImVec2; size_max: ImVec2; custom_callback: ImGuiSizeConstraintCallback; custom_callback_data: pointer); cdecl; external ImguiLibName;
 procedure igSetNextWindowContentSize(size: ImVec2); cdecl; external ImguiLibName;
@@ -1155,23 +1173,23 @@ function  igGetIDPtr(ptr_id: pointer): ImGuiID; cdecl; external ImguiLibName;
 
 { Widgets: Text }
 procedure igTextUnformatted(text: PChar; text_end: PChar); cdecl; external ImguiLibName;
-procedure igText(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igText(fmt: PChar); cdecl; external ImguiLibName;
+procedure igText(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igText(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 // igTextV
-procedure igTextColored(col: ImVec4; fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igTextColored(col: ImVec4; fmt: PChar); cdecl; external ImguiLibName;
+procedure igTextColored(col: ImVec4; fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igTextColored(col: ImVec4; fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 // igTextColoredV
-procedure igTextDisabled(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igTextDisabled(fmt: PChar); cdecl; external ImguiLibName;
+procedure igTextDisabled(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igTextDisabled(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 // igTextDisabledV
-procedure igTextWrapped(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igTextWrapped(fmt: PChar); cdecl; external ImguiLibName;
+procedure igTextWrapped(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igTextWrapped(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 // igTextWrappedV
-procedure igLabelText(_label: PChar; fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igLabelText(_label: PChar; fmt: PChar); cdecl; external ImguiLibName;
+procedure igLabelText(_label: PChar; fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igLabelText(_label: PChar; fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 // igLabelTextV
-procedure igBulletText(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igBulletText(fmt: PChar); cdecl; external ImguiLibName;
+procedure igBulletText(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igBulletText(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 procedure igBullet; cdecl; external ImguiLibName;
 // igBulletTextV
 
@@ -1257,19 +1275,19 @@ function  igVSliderInt(_label: PChar; size: ImVec2; v: Plongint; v_min: longint;
 
 { Widgets: Trees }
 function  igTreeNode(_label: PChar): bool; cdecl; external ImguiLibName;
-function  igTreeNodeStr(str_id: PChar; fmt: PChar; args: array of const): bool; cdecl; external ImguiLibName;
-function  igTreeNodeStr(str_id: PChar; fmt: PChar): bool; cdecl; external ImguiLibName;
-function  igTreeNodePtr(ptr_id: pointer; fmt: PChar; args: array of const): bool; cdecl; external ImguiLibName;
-function  igTreeNodePtr(ptr_id: pointer; fmt: PChar): bool; cdecl; external ImguiLibName;
+function  igTreeNodeStr(str_id: PChar; fmt: PChar; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodeStr(str_id: PChar; fmt: PChar): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodePtr(ptr_id: pointer; fmt: PChar; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodePtr(ptr_id: pointer; fmt: PChar): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 //todo : vargs
 //    function  igTreeNodeStrV(str_id:Pchar; fmt:Pchar; args:va_list):bool;cdecl;external ImguiLibName;
 //todo : vargs
 //    function  igTreeNodePtrV(ptr_id:pointer; fmt:Pchar; args:va_list):bool;cdecl;external ImguiLibName;
 function  igTreeNodeEx(_label: PChar; flags: ImGuiTreeNodeFlags): bool; cdecl; external ImguiLibName;
-function  igTreeNodeExStr(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: PChar; args: array of const): bool; cdecl; external ImguiLibName;
-function  igTreeNodeExStr(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: PChar): bool; cdecl; external ImguiLibName;
-function  igTreeNodeExPtr(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: PChar; args: array of const): bool; cdecl; external ImguiLibName;
-function  igTreeNodeExPtr(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: PChar): bool; cdecl; external ImguiLibName;
+function  igTreeNodeExStr(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: PChar; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodeExStr(str_id: PChar; flags: ImGuiTreeNodeFlags; fmt: PChar): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodeExPtr(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: PChar; args: array of const): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+function  igTreeNodeExPtr(ptr_id: pointer; flags: ImGuiTreeNodeFlags; fmt: PChar): bool;{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 //todo : vargs
 //    function  igTreeNodeExV(str_id:Pchar; flags:ImGuiTreeNodeFlags; fmt:Pchar; args:va_list):bool;cdecl;external ImguiLibName;
 //todo : vargs
@@ -1301,8 +1319,8 @@ procedure igValueUInt(prefix: PChar; v: dword); cdecl; external ImguiLibName;
 procedure igValueFloat(prefix: PChar; v: single; float_format: PChar); cdecl; external ImguiLibName;
 
 { Tooltip }
-procedure igSetTooltip(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igSetTooltip(fmt: PChar); cdecl; external ImguiLibName;
+procedure igSetTooltip(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igSetTooltip(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 //todo : vargs
 //    procedure igSetTooltipV(fmt:Pchar; args:va_list);cdecl;external ImguiLibName;
 procedure igBeginTooltip; cdecl; external ImguiLibName;
@@ -1335,8 +1353,8 @@ procedure igLogToFile(max_depth: longint; filename: PChar); cdecl; external Imgu
 procedure igLogToClipboard(max_depth: longint); cdecl; external ImguiLibName;
 procedure igLogFinish; cdecl; external ImguiLibName;
 procedure igLogButtons; cdecl; external ImguiLibName;
-procedure igLogText(fmt: PChar; args: array of const); cdecl; external ImguiLibName;
-procedure igLogText(fmt: PChar); cdecl; external ImguiLibName;
+procedure igLogText(fmt: PChar; args: array of const);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
+procedure igLogText(fmt: PChar);{$IFNDEF FPC}overload;{$ENDIF} cdecl; external ImguiLibName;
 
 { Drag and Drop - not translated }
 
@@ -1610,8 +1628,8 @@ class procedure ImGui.SetNextWindowPos(pos: ImVec2; cond: ImGuiCond = 0);
     begin igSetNextWindowPos(pos, cond, ImVec2Zero) end;
 class procedure ImGui.SetNextWindowPos(pos: ImVec2; cond: ImGuiCond; const pivot: ImVec2);
     begin igSetNextWindowPos(pos, cond, pivot) end;
-class procedure ImGui.SetNextWindowPosCenter(cond: ImGuiCond = 0);
-    begin igSetNextWindowPosCenter(cond) end;
+//NOTFOUNDclass procedure ImGui.SetNextWindowPosCenter(cond: ImGuiCond = 0);
+//    begin igSetNextWindowPosCenter(cond) end;
 class procedure ImGui.SetNextWindowSize(size: ImVec2; cond: ImGuiCond = 0);
     begin igSetNextWindowSize(size, cond) end;
 class procedure ImGui.SetNextWindowSizeConstraints(size_min: ImVec2; size_max: ImVec2; custom_callback: ImGuiSizeConstraintCallback; custom_callback_data: pointer);
